@@ -288,7 +288,7 @@ namespace CommandLine {
 		}
 
 
-		// example of a valid command: "disk get serialnumber, model"
+		// Example of a valid command: "disk get serialnumber, model"
 		// "disk" is the main command
 		// "get" is the keyword required to request fields/members
 		// "serialnumber" and "model" are sub-commands containing the requsted fields
