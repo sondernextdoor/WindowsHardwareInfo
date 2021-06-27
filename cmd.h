@@ -718,7 +718,7 @@ namespace CommandLine {
 			} break;
 
 			case eHelp: {
-				ShellExecuteW(nullptr, nullptr, L"http://www.github.com/paradoxwastaken", nullptr, nullptr, SW_SHOW);
+				ShellExecuteW(nullptr, nullptr, L"https://github.com/paradoxwastaken/WindowsHardwareInfo/blob/main/README.md#command-line", nullptr, nullptr, SW_SHOW);
 			} break;
 
 			case eExit: {
