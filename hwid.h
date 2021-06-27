@@ -34,22 +34,22 @@ private:
 		std::wstring Ret{};
 
 		RegGetValueW(HKEY_LOCAL_MACHINE,
-			SubKey.c_str(),
-			Value.c_str(),
-			RRF_RT_REG_SZ,
-			nullptr,
-			nullptr,
-			&Size);
+			     SubKey.c_str(),
+			     Value.c_str(),
+			     RRF_RT_REG_SZ,
+			     nullptr,
+			     nullptr,
+			     &Size);
 
 		Ret.resize(Size);
 
 		RegGetValueW(HKEY_LOCAL_MACHINE,
-			SubKey.c_str(),
-			Value.c_str(),
-			RRF_RT_REG_SZ,
-			nullptr,
-			&Ret[0],
-			&Size);
+			     SubKey.c_str(),
+			     Value.c_str(),
+			     RRF_RT_REG_SZ,
+			     nullptr,
+			     &Ret[0],
+			     &Size);
 
 		return Ret.c_str();
 	}
@@ -77,14 +77,14 @@ private:
 
 
 		hResult = CoInitializeSecurity(nullptr,
-			-1,
-			nullptr,
-			nullptr,
-			RPC_C_AUTHN_LEVEL_DEFAULT,
-			RPC_C_IMP_LEVEL_IMPERSONATE,
-			nullptr,
-			EOAC_NONE,
-			nullptr);
+					       -1,
+					       nullptr,
+					       nullptr,
+					       RPC_C_AUTHN_LEVEL_DEFAULT,
+					       RPC_C_IMP_LEVEL_IMPERSONATE,
+					       nullptr,
+					       EOAC_NONE,
+					       nullptr);
 
 
 
@@ -95,10 +95,10 @@ private:
 
 
 		hResult = CoCreateInstance(CLSID_WbemLocator,
-			NULL,
-			CLSCTX_INPROC_SERVER,
-			IID_IWbemLocator,
-			reinterpret_cast<PVOID*>(&Locator));
+			 		   NULL,
+					   CLSCTX_INPROC_SERVER,
+					   IID_IWbemLocator,
+					   reinterpret_cast<PVOID*>(&Locator));
 
 
 		if (FAILED(hResult)) {
@@ -108,13 +108,13 @@ private:
 
 
 		hResult = Locator->ConnectServer(_bstr_t(ServerName),
-			nullptr,
-			nullptr,
-			nullptr,
-			NULL,
-			nullptr,
-			nullptr,
-			&Services);
+						 nullptr,
+						 nullptr,
+						 nullptr,
+						 NULL,
+						 nullptr,
+						 nullptr,
+						 &Services);
 
 
 		if (FAILED(hResult)) {
@@ -125,13 +125,13 @@ private:
 
 
 		hResult = CoSetProxyBlanket(Services,
-			RPC_C_AUTHN_WINNT,
-			RPC_C_AUTHZ_NONE,
-			nullptr,
-			RPC_C_AUTHN_LEVEL_CALL,
-			RPC_C_IMP_LEVEL_IMPERSONATE,
-			nullptr,
-			EOAC_NONE);
+					    RPC_C_AUTHN_WINNT,
+					    RPC_C_AUTHZ_NONE,
+					    nullptr,
+					    RPC_C_AUTHN_LEVEL_CALL,
+					    RPC_C_IMP_LEVEL_IMPERSONATE,
+					    nullptr,
+					    EOAC_NONE);
 
 
 		if (FAILED(hResult)) {
@@ -143,10 +143,10 @@ private:
 
 
 		hResult = Services->ExecQuery(bstr_t(L"WQL"),
-			bstr_t(Query.c_str()),
-			WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-			nullptr,
-			&Enumerator);
+					      bstr_t(Query.c_str()),
+					      WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+					      nullptr,
+					      &Enumerator);
 
 
 		if (FAILED(hResult)) {
@@ -232,12 +232,12 @@ private:
 
 		for (;; DriveCount++) {
 			if (CreateFileW((DrivePath + std::to_wstring(DriveCount)).c_str(), 
-							NULL, 
-							NULL,
-							nullptr,
-							OPEN_EXISTING, 
-							NULL,
-							nullptr) == INVALID_HANDLE_VALUE) { break; }
+					NULL, 
+					NULL,
+					nullptr,
+					OPEN_EXISTING, 
+					NULL,
+					nullptr) == INVALID_HANDLE_VALUE) { break; }
 		}
 
 
@@ -269,38 +269,38 @@ private:
 				// Armed with that knowledge, we can open handles directly to the driver letters we have, and use DeviceIoControl to call into the volume
 
 				hVolume = CreateFileW((VolumePath + DeviceId.at(j)).c_str(),
-					NULL,
-					NULL,
-					nullptr,
-					OPEN_EXISTING,
-					NULL,
-					nullptr);
+						      NULL,
+						      NULL,
+						      nullptr,
+						      OPEN_EXISTING,
+						      NULL,
+						      nullptr);
 
 
 				// IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS will fill our buffer with a VOLUME_DISK_EXTENTS structure
 				// First, we must get the number of disk extents
 
 				DeviceIoControl(hVolume,
-					IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
-					nullptr,
-					NULL,
-					&DiskExtents,
-					sizeof(DiskExtents),
-					&IoBytes,
-					nullptr);
+						IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+						nullptr,
+						NULL,
+						&DiskExtents,
+						sizeof(DiskExtents),
+						&IoBytes,
+						nullptr);
 
 
 				// VOLUME_DISK_EXTENTS contains an array of DISK_EXTENT structures. DISK_EXTENT contains a DWORD member, DiskNumber
 				// DiskNumber will be the same number used to construct the name of the disk, which is PhysicalDriveX, where X is the DiskNumber
 
 				DeviceIoControl(hVolume,
-					IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
-					nullptr,
-					NULL,
-					&DiskExtents,
-					offsetof(VOLUME_DISK_EXTENTS, Extents[DiskExtents.NumberOfDiskExtents]),
-					&IoBytes,
-					nullptr);
+						IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+						nullptr,
+						NULL,
+						&DiskExtents,
+						offsetof(VOLUME_DISK_EXTENTS, Extents[DiskExtents.NumberOfDiskExtents]),
+						&IoBytes,
+						nullptr);
 
 				CloseHandle(hVolume);
 
@@ -326,9 +326,9 @@ private:
 			// GetDiskFreeSpaceEx() will give us the size and free space available corresponding to the drive letters we have
 
 			GetDiskFreeSpaceEx(SafeString(SortedDeviceId.at(i)).c_str(),
-				&FreeBytesAvailable,
-				&TotalBytes,
-				nullptr);
+					   &FreeBytesAvailable,
+					   &TotalBytes,
+					   nullptr);
 
 			RemoveWhitespaces(this->Disk.at(i).SerialNumber = SafeString(SerialNumber.at(i)));
 			this->Disk.at(i).Model = SafeString(Model.at(i));
