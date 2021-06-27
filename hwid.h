@@ -158,10 +158,10 @@ private:
 
 		while (Enumerator) {
 
-			HRESULT Res = Enumerator->Next(WBEM_INFINITE,
-				1,
-				&ClassObject,
-				&Returned);
+			HRESULT Res{ Enumerator->Next(WBEM_INFINITE,
+						      1,
+						      &ClassObject,
+						      &Returned) };
 
 			if (!Returned) {
 				break;
