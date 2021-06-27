@@ -499,7 +499,7 @@ public:
 		std::wstring Model{};		 // e.g. ADATA SU740
 		std::wstring Interface{};	 // e.g. SCSI
 		std::wstring DriveLetter{};
-		long long Size{};			 // In GB
+		long long Size{};		 // In GB
 		long long FreeSpace{};		 // In GB
 		unsigned int MediaType{};	 // 4 = SSD, 3 = HDD, 0 = Unspecified, 5 = SCM
 		bool IsBootDrive{};
