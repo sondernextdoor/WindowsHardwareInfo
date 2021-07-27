@@ -229,15 +229,18 @@ private:
 		// We need a count of the actual physical disks active on the system
 		// The simplest way is to attempt to open a handle to PhysicalDriveX (where X is 0, 1, 2, etc.)
 		// If we can get a valid handle, we increment the drive count, else we break
-
+		
+		HANDLE Handle{ nullptr };
+		
 		for (;; DriveCount++) {
-			if (CreateFileW((DrivePath + std::to_wstring(DriveCount)).c_str(), 
-					NULL, 
-					NULL,
-					nullptr,
-					OPEN_EXISTING, 
-					NULL,
-					nullptr) == INVALID_HANDLE_VALUE) { break; }
+			if (Handle = CreateFileW((DrivePath + std::to_wstring(DriveCount)).c_str(), 
+						  NULL, 
+						  NULL,
+						  nullptr,
+						  OPEN_EXISTING, 
+						  NULL,
+						  nullptr) == INVALID_HANDLE_VALUE) { break; }
+			CloseHandle(Handle);
 		}
 
 
