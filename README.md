@@ -40,6 +40,8 @@ Name
 
 Driver Version
 
+Memory
+
 Resolution
 
 Refresh Rate
@@ -149,6 +151,7 @@ GPU:
 
 `name,
 driverversion,
+memory,
 resolution,
 refreshrate`
 
