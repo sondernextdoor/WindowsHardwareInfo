@@ -69,7 +69,8 @@ namespace CommandLine {
 		L"name",
 		L"driverversion",
 		L"resolution",
-		L"refreshrate"
+		L"refreshrate",
+		L"memory"
 	};
 
 	std::vector <std::wstring> CPUSubCommands{
@@ -117,8 +118,13 @@ namespace CommandLine {
 
 
 	template <typename T>
-	void FmtPrint(T ToPrint, int HWType, int Iterator) {
+	void FmtPrint(T ToPrint, int HWType, int Iterator, const wchar_t* AdditionalText = nullptr) {
 		std::wcout << ToPrint;
+		
+		if (AdditionalText != nullptr) {
+			std::wcout << AdditionalText;
+		}
+		
 
 		switch (HWType) {
 			case eDisk: {
@@ -169,6 +175,7 @@ namespace CommandLine {
 		for (int i = 0; i < HWID.GPU.size(); i++) {
 			std::wcout << L"Name:\t\t\t" << HWID.GPU.at(i).Name << std::endl;
 			std::wcout << L"Driver Version:\t\t" << HWID.GPU.at(i).DriverVersion << std::endl;
+			std::wcout << L"Memory:\t\t\t" << HWID.GPU.at(i).Memory << L" GB" << std::endl;
 			std::wcout << L"Resolution:\t\t" << HWID.GPU.at(i).XResolution << L"x" << HWID.GPU.at(i).YResolution << std::endl;
 			std::wcout << L"Refresh Rate:\t\t" << HWID.GPU.at(i).RefreshRate << std::endl;
 
@@ -288,7 +295,7 @@ namespace CommandLine {
 		}
 
 
-		// Example of a valid command: "disk get serialnumber, model"
+		// example of a valid command: "disk get serialnumber, model"
 		// "disk" is the main command
 		// "get" is the keyword required to request fields/members
 		// "serialnumber" and "model" are sub-commands containing the requsted fields
@@ -509,6 +516,12 @@ namespace CommandLine {
 									FmtPrint(HWID.GPU.at(i).RefreshRate, eGPU, i);
 								}
 							} break;
+
+							case 5: {
+								for (int i = 0; i < HWID.GPU.size(); i++) {
+									FmtPrint(HWID.GPU.at(i).Memory, eGPU, i, L" GB");
+								}
+							} break;
 						}
 					}
 				} break;
@@ -718,7 +731,7 @@ namespace CommandLine {
 			} break;
 
 			case eHelp: {
-				ShellExecuteW(nullptr, nullptr, L"https://github.com/paradoxwastaken/WindowsHardwareInfo/blob/main/README.md#command-line", nullptr, nullptr, SW_SHOW);
+				ShellExecuteW(nullptr, nullptr, L"http://www.github.com/paradoxwastaken", nullptr, nullptr, SW_SHOW);
 			} break;
 
 			case eExit: {
