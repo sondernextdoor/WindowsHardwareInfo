@@ -277,7 +277,7 @@ private:
 				// The drive letter is what we rely on to get the total size and free space of the drive, so we must map the data accordingly
 				// Win32_DiskDrive will return data in the order we want. It'll always be PhysicalDrive0, then PhysicalDrive1, then 2, etc.
 
-				// Armed with that knowledge, we can open handles directly to the driver letters we have, and use DeviceIoControl to call into the volume
+				// Armed with that knowledge, we can open handles directly to the drive letters we have, and use DeviceIoControl to call into the volume
 
 				hVolume = CreateFileW((VolumePath + DeviceId.at(j)).c_str(),
 						      NULL,
