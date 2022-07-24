@@ -319,11 +319,13 @@ namespace CommandLine {
 
 
 		// Determine if the command contains a "get" request by checking for the "get" keyword
-		// Additionally, make sure the command isn't just "[main command] get" by checking if it's larger than the size of the main command + the size of "get"
+		// Additionally, make sure the command isn't just "[main command] get" by checking 
+		// if it's larger than the size of the main command + the size of "get"
 
 		if (CurCmd.find(L"get") != std::wstring::npos && CurCmd.size() != ValidCommands.at(ParsedCommand.CommandIndex).size() + 3) {
 
-			// Determine if "get" is directly after the main command. If it's not, it's an invalid command (e.g. "disk get serialnumber" is valid, "get disk serialnumber" is not)
+			// Determine if "get" is directly after the main command. If it's not, it's an invalid command 
+			// e.g. "disk get serialnumber" is valid, "get disk serialnumber" is not
 
 			if (CurCmd.find(L"get") != ValidCommands.at(ParsedCommand.CommandIndex).size()) {
 				ParsedCommand.CommandIndex = eInvalid;
@@ -337,7 +339,8 @@ namespace CommandLine {
 			// In this example, the disk serial number(s) will be returned before the model(s) because serial number is before model in our vector
 			// even though they specified the model before the serial number.
 			// So we must keep track of the starting offset of the sub-commands by storing each one in an additional vector
-			// The smallest offsets are closest to the "get" keyword in the command, so we'll use the indices of them to sort our sub-command index vector
+			// The smallest offsets are closest to the "get" keyword in the command, 
+			// so we'll use the indices of them to sort our sub-command index vector
 
 			std::vector <std::wstring> SubCmds{ ValidSubCommands() };
 			std::vector <int> UnorderedSubIndex{};
@@ -387,7 +390,8 @@ namespace CommandLine {
 		}
 		else if (CurCmd.size() > ValidCommands.at(ParsedCommand.CommandIndex).size()) {
 
-			// There's a valid main command present, but there are no sub-commands and the total size of the command is larger than the size of the valid main command it contains
+			// There's a valid main command present, but there are no sub-commands and the total size of the command is larger than 
+			// the size of the valid main command it contains
 			// We have an invalid command (e.g. diskgkdfmkm)
 
 			ParsedCommand.CommandIndex = eInvalid;
