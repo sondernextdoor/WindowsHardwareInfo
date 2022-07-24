@@ -298,7 +298,7 @@ namespace CommandLine {
 		// example of a valid command: "disk get serialnumber, model"
 		// "disk" is the main command
 		// "get" is the keyword required to request fields/members
-		// "serialnumber" and "model" are sub-commands containing the requsted fields
+		// "serialnumber" and "model" are sub-commands containing the requested fields
 
 
 		// Determine if the start of the command contains a valid main command by looping through our vector of valid commands
@@ -362,7 +362,8 @@ namespace CommandLine {
 			}
 
 
-			// We now call our lambda which will return a vector of the original offset indices ordered in correspondence with the offset values sorted from min to max
+			// We now call our lambda which will return a vector of the original offset indices 
+			// ordered in correspondence with the offset values sorted from min to max
 
 			auto OrderedOffsets{ OrderVector(Offsets) };
 
