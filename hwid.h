@@ -441,7 +441,6 @@ private:
 
 		QueryWMI(L"Win32_ComputerSystem", L"Name", SystemName);
 		QueryWMI(L"Win32_ComputerSystem", L"Model", IsHypervisorPresent);
-		
 		QueryWMI(L"Win32_OperatingSystem", L"Version", OSVersion);
 		QueryWMI(L"Win32_OperatingSystem", L"Name", OSName);
 		QueryWMI(L"Win32_OperatingSystem", L"OSArchitecture", OSArchitecture);
@@ -468,7 +467,6 @@ private:
 
 		QueryWMI(L"Win32_NetworkAdapter", L"Name", Name);
 		QueryWMI(L"Win32_NetworkAdapter", L"MACAddress", MAC);
-
 
 		this->NetworkAdapter.resize(Name.size());
 
