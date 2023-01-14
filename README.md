@@ -189,11 +189,3 @@ Physical Memory:
 Registry:
 
 `computerhardwareid`
-
-
-# If you found this useful, consider buying me a coffee!
-BTC: 3HmX9cGF5fzFSTgSJAG2TDbMg5watPuQvs
-
-ETH: 0xc16650Ea986CB4f0d4156460a6542946bea3aC70
-
-PayPal: nicholasagalioto@gmail.com
