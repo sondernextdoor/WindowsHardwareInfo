@@ -12,6 +12,8 @@ Model
 
 Interface Type
 
+Bus Type
+
 Drive Letter
 
 Size
@@ -21,6 +23,13 @@ Free Space
 Media Type
 
 IsBootDrive 
+
+Volumes:
+  * Name
+  * Serial Number
+  * Size
+  * Free Space
+  * Drive Letter
 
 
 System Management BIOS (SMBIOS)
@@ -132,11 +141,13 @@ Disk:
 `serialnumber,
 model,
 interface,
+bustype,
 driveletter,
 size,
 freespace,
 mediatype,
-isbootdrive`
+isbootdrive,
+volumes`
 
 
 SMBIOS:
