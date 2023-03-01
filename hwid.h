@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <Windows.h>
 #include <comdef.h>
 #include <Wbemidl.h>
@@ -14,6 +15,111 @@
 class HardwareId {
 
 public:
+
+
+	struct VolumeObject {
+
+		unsigned long SerialNumber{};
+		std::wstring DriveLetter{};
+		std::wstring Name{};
+		long long Size{};
+		long long FreeSpace{};
+	};
+
+
+	struct DiskObject {
+
+		std::wstring SerialNumber{};
+		std::wstring Name;
+		std::wstring Model{};
+		std::wstring Interface{};
+		std::wstring DriveLetter{};
+		long long Size{};
+		long long FreeSpace{};
+		unsigned int MediaType{};
+		unsigned int BusType{};
+		bool IsBootDrive{};
+		std::vector<VolumeObject> Volumes{};
+
+	}; std::vector <DiskObject> Disk{};
+
+
+	struct {
+
+		std::wstring Manufacturer{};
+		std::wstring Product{};
+		std::wstring Version{};
+		std::wstring SerialNumber{};
+
+	} SMBIOS;
+
+
+	struct {
+
+		std::wstring ProcessorId{};
+		std::wstring Manufacturer{};
+		std::wstring Name{};
+		int Cores{};
+		int Threads{};
+
+	} CPU;
+
+
+	struct GPUObject {
+
+		std::wstring Name{};
+		std::wstring DriverVersion{};
+		unsigned long long Memory{};
+		int XResolution{};
+		int YResolution{};
+		int RefreshRate{};
+
+	}; std::vector <GPUObject> GPU{};
+
+
+	struct NetworkAdapterObject {
+
+		std::wstring Name{};
+		std::wstring MAC{};
+
+	}; std::vector <NetworkAdapterObject> NetworkAdapter{};
+
+
+
+	struct {
+
+		std::wstring Name{};
+		bool IsHypervisorPresent{};
+		std::wstring OSVersion{};
+		std::wstring OSName{};
+		std::wstring OSArchitecture{};
+		std::wstring OSSerialNumber{};
+
+	} System;
+
+
+	struct {
+
+		std::wstring PartNumber{};
+
+	} PhysicalMemory;
+
+
+	struct {
+
+		std::wstring ComputerHardwareId{};
+
+	} Registry;
+
+
+	std::unique_ptr<HardwareId> Pointer() {
+		return std::make_unique<HardwareId>(*this);
+	}
+
+
+	HardwareId() {
+		GetHardwareId();
+	}
 
 
 	static std::wstring SafeString(const wchar_t* pString) {
@@ -28,7 +134,7 @@ public:
 
 private:
 
-
+	
 	std::wstring GetHKLM(std::wstring SubKey, std::wstring Value) {
 		DWORD Size{};
 		std::wstring Ret{};
@@ -212,7 +318,6 @@ private:
 
 	void QueryDisk() {
 
-		std::wstring DrivePath{ L"\\\\.\\PhysicalDrive" };
 		std::wstring VolumePath{ L"\\\\.\\" };
 		HANDLE hVolume{ nullptr };
 		VOLUME_DISK_EXTENTS DiskExtents{ NULL };
@@ -220,6 +325,7 @@ private:
 		ULARGE_INTEGER FreeBytesAvailable{};
 		ULARGE_INTEGER TotalBytes{};
 		int DriveCount{ 0 };
+		std::unordered_map<std::wstring, std::vector<std::wstring>> VolumeData{}; // [drive model] [volume letters]
 
 
 		std::vector <const wchar_t*> SerialNumber{};
@@ -227,33 +333,14 @@ private:
 		std::vector <const wchar_t*> Interface{};
 		std::vector <const wchar_t*> Name{};
 		std::vector <const wchar_t*> DeviceId{};
-		std::vector <const wchar_t*> SortedDeviceId{};
 		std::vector <const wchar_t*> FriendlyName{};
+		std::vector <const wchar_t*> BootDirectory{};
+		std::vector <wchar_t*> SortedDeviceId{};
 		std::vector <unsigned int> MediaType{};
-		std::vector <bool> IsBoot{};
-
-
-		// We need a count of the actual physical disks active on the system
-		// The simplest way is to attempt to open a handle to PhysicalDriveX (where X is 0, 1, 2, etc.)
-		// If we can get a valid handle, we increment the drive count, else we break
-
-		HANDLE Handle{ nullptr };
-
-		for (;; DriveCount++) {
-			if ((Handle = CreateFileW((DrivePath + std::to_wstring(DriveCount)).c_str(), 
-						   NULL, 
-						   NULL,
-						   nullptr,
-						   OPEN_EXISTING, 
-						   NULL,
-						   nullptr)) == INVALID_HANDLE_VALUE) { break; }
-
-			CloseHandle(Handle);
-		}
-
-
-		this->Disk.resize(DriveCount);
-		SortedDeviceId.resize(DriveCount);
+		std::vector <unsigned int> BusType{};
+		std::vector <unsigned int> SortedBusType{};
+		std::vector <unsigned int> DiskNumbers{};
+		std::vector <unsigned int> SortedDiskNumbers{};
 
 
 		// To get most of the data we want, we make several queries to the Windows Management Instrumentation (WMI) service
@@ -264,13 +351,24 @@ private:
 		QueryWMI(L"Win32_DiskDrive", L"InterfaceType", Interface);
 		QueryWMI(L"Win32_DiskDrive", L"Name", Name);
 		QueryWMI(L"Win32_LogicalDisk", L"DeviceId", DeviceId);
+		QueryWMI(L"Win32_BootConfiguration", L"BootDirectory", BootDirectory);
+		QueryWMI(L"MSFT_Disk", L"BusType", BusType, L"ROOT\\microsoft\\windows\\storage");
+		QueryWMI(L"MSFT_Disk", L"Number", DiskNumbers, L"ROOT\\microsoft\\windows\\storage");
 		QueryWMI(L"MSFT_PhysicalDisk", L"MediaType", MediaType, L"ROOT\\microsoft\\windows\\storage");
 		QueryWMI(L"MSFT_PhysicalDisk", L"FriendlyName", FriendlyName, L"ROOT\\microsoft\\windows\\storage");
-		QueryWMI(L"MSFT_Disk", L"IsBoot", IsBoot, L"ROOT\\microsoft\\windows\\storage");
+
+
+		DriveCount = DeviceId.size();
+		this->Disk.resize(DriveCount);
+		SortedDeviceId.resize(DriveCount);
 
 
 		for (int i = 0; i < DriveCount; i++) {
+
 			for (int j = 0; j < DriveCount; j++) {
+				if (DeviceId.at(j) == L"X") {
+					continue;
+				}
 
 				// Win32_LogicalDisk is relied on to get the drive letter (DeviceId)
 				// However, the data it returns will not be in the same order as the results we get from Win32_DiskDrive
@@ -286,7 +384,6 @@ private:
 						      OPEN_EXISTING,
 						      NULL,
 						      nullptr);
-
 
 				// IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS will fill our buffer with a VOLUME_DISK_EXTENTS structure
 				// First, we must get the number of disk extents
@@ -315,55 +412,141 @@ private:
 
 				CloseHandle(hVolume);
 
-
 				// To map the drive letter from Win32_LogicalDisk to the data returned by Win32_DiskDrive
 				// We compare the drive letter's DiskNumber to the number at the end of the "Name" we recieve from Win32_DiskDrive
 				// We then reorder the drive letters accordingly
 
 				if (DiskExtents.Extents->DiskNumber == std::stoi(&SafeString(Name.at(i)).back())) {
-					SortedDeviceId.at(i) = DeviceId.at(j);
-					break;
+					SortedDeviceId.at(i) = const_cast<wchar_t*>(DeviceId.at(j));
+					VolumeData[Model.at(i)].push_back(DeviceId.at(j));
+
+					if (std::find(SortedDiskNumbers.begin(), SortedDiskNumbers.end(), DiskExtents.Extents->DiskNumber) == SortedDiskNumbers.end() ) {
+						SortedDiskNumbers.push_back(DiskExtents.Extents->DiskNumber);
+					}
+
+					DeviceId.at(j) = L"X";
+
+					if (j == DriveCount - 1) {
+						break;
+					}
 				}
 			}
-
 		}
 
 
-		this->Disk.resize(DriveCount);
+		// The BusType data returned by MSFT_Disk will also not be in the proper order, so we must map that accordingly as well
+		// To do so, we simply compare the disk numbers returned from MSFT_Disk to the disk numbers we sorted according to the Win32_DiskDrive data
+
+		for (int i = 0; i < DiskNumbers.size(); i++) {
+			for (int j = 0; j < DiskNumbers.size(); j++) {
+				if (DiskNumbers[j] == SortedDiskNumbers[i]) {
+					SortedBusType.push_back(BusType.at(j));
+					break;
+				}
+			}
+		}
 
 
-		for (int i = 0; i < DriveCount; i++) {
-
-			// GetDiskFreeSpaceEx() will give us the size and free space available corresponding to the drive letters we have
-
-			GetDiskFreeSpaceEx(SafeString(SortedDeviceId.at(i)).c_str(),
-					   &FreeBytesAvailable,
-					   &TotalBytes,
-					   nullptr);
+		for (int i = 0; i < DriveCount && i < SerialNumber.size(); i++) {
 
 			RemoveWhitespaces(this->Disk.at(i).SerialNumber = SafeString(SerialNumber.at(i)));
 			this->Disk.at(i).Model = SafeString(Model.at(i));
 			this->Disk.at(i).Interface = SafeString(Interface.at(i));
-			this->Disk.at(i).DriveLetter = SafeString(SortedDeviceId.at(i));
-			this->Disk.at(i).Size = TotalBytes.QuadPart / pow(1024, 3);
-			this->Disk.at(i).FreeSpace = FreeBytesAvailable.QuadPart / pow(1024, 3);
-			this->Disk.at(i).IsBootDrive = IsBoot.at(i);
-
+			this->Disk.at(i).BusType = SortedBusType.at(i);
+			this->Disk.at(i).Name = SafeString(Name.at(i));
 
 			// Data from MSFT_PhysicalDisk will not be in the same order as Win32_DiskDrive
 			// So we compare the "FriendlyName" from MSFT_PhysicalDisk with the "Model" from Win32_DiskDrive
 			// We then reorder the data accordingly
 
-			for (int j = 0; j < DriveCount; j++) {
+			for (int j = 0; j < FriendlyName.size(); j++) {
 				if (!this->Disk.at(i).Model.compare(FriendlyName.at(j))) {
 					this->Disk.at(i).MediaType = MediaType.at(j);
 				}
+			}
+
+			if (VolumeData[Model.at(i)].size() == 1) {
+
+				this->Disk.at(i).DriveLetter = SafeString(SortedDeviceId.at(i));
+
+				// GetDiskFreeSpaceEx() will give us the size and free space available corresponding to the drive letters we have
+
+				GetDiskFreeSpaceEx(this->Disk.at(i).DriveLetter.c_str(),
+					&FreeBytesAvailable,
+					&TotalBytes,
+					nullptr);
+
+				this->Disk.at(i).Size = TotalBytes.QuadPart / pow(1024, 3);
+				this->Disk.at(i).FreeSpace = FreeBytesAvailable.QuadPart / pow(1024, 3);
+				this->Disk.at(i).IsBootDrive = BootDirectory.at(0)[0] == this->Disk.at(i).DriveLetter[0] ? true : false;
+				this->Disk.at(i).BusType = (MediaType.at(i) == 0 && SortedBusType.at(i) == 7) ? 123 : SortedBusType.at(i);
+			} 
+			else {
+
+				unsigned long long VolumeCount{ VolumeData[Model.at(i)].size() };
+				this->Disk.at(i).Volumes.resize(VolumeCount);
+
+				for (int j = 0; j < VolumeCount; j++) {
+					VolumeObject& Volume{ this->Disk.at(i).Volumes.at(j) };
+					Volume.DriveLetter = SafeString(VolumeData[Model.at(i)][j].c_str());
+
+					GetDiskFreeSpaceEx(Volume.DriveLetter.c_str(),
+						&FreeBytesAvailable,
+						&TotalBytes,
+						nullptr);
+
+					this->Disk.at(i).Size += ( Volume.Size = TotalBytes.QuadPart / pow(1024, 3) );
+					this->Disk.at(i).FreeSpace += ( Volume.FreeSpace = FreeBytesAvailable.QuadPart / pow(1024, 3) );
+
+					hVolume = CreateFileW(std::wstring(VolumePath + Volume.DriveLetter).c_str(),
+						GENERIC_READ,
+						FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+						nullptr,
+						OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL,
+						nullptr);
+
+					if (hVolume == INVALID_HANDLE_VALUE) {
+						Volume.Name = L"(null)";
+						Volume.SerialNumber = 0;
+						break;
+					}
+
+					std::wstring VolumeName{};
+					VolumeName.resize(MAX_PATH + 1, '\0');
+
+					GetVolumeInformationByHandleW(hVolume,
+						VolumeName.data(),
+						MAX_PATH + 1,
+						&Volume.SerialNumber,
+						nullptr,
+						nullptr,
+						nullptr,
+						0);
+
+					for (int i = MAX_PATH + 1; i >= 0 && VolumeName.empty() == false; i--) {
+						if (VolumeName.back() == L'\0') {
+							VolumeName.pop_back();
+						}
+					}
+
+					Volume.Name = VolumeName.empty() == true ? L"(null)" : VolumeName;
+					CloseHandle(hVolume);
+				}
+			}
+		}
+
+		for (int i = 0; i < this->Disk.size(); i++) {
+			if (this->Disk.at(i).Model.empty() && this->Disk.at(i).DriveLetter.empty()) {
+				this->Disk.erase(this->Disk.begin() + i);
+				--i;
 			}
 		}
 	}
 
 
 	void QuerySMBIOS() {
+
 		std::vector <const wchar_t*> Manufacturer{};
 		std::vector <const wchar_t*> Product{};
 		std::vector <const wchar_t*> Version{};
@@ -383,6 +566,7 @@ private:
 
 
 	void QueryProcessor() {
+
 		std::vector <const wchar_t*> ProcessorId{};
 		std::vector <const wchar_t*> Manufacturer{};
 		std::vector <const wchar_t*> Name{};
@@ -404,6 +588,7 @@ private:
 
 
 	void QueryGPU() {
+
 		std::vector <const wchar_t*> Name{};
 		std::vector <const wchar_t*> DriverVersion{};
 		std::vector <unsigned long long> Memory{};
@@ -423,7 +608,7 @@ private:
 		for (int i = 0; i < Name.size(); i++) {
 			this->GPU.at(i).Name = SafeString(Name.at(i));
 			this->GPU.at(i).DriverVersion = SafeString(DriverVersion.at(i));
-			this->GPU.at(i).Memory = (Memory.at(i) * 2 / ( 1024 * 1024 ) / 1000);
+			this->GPU.at(i).Memory = Memory.at(i) * 2 / (1024 * 1024);
 			this->GPU.at(i).XResolution = XRes.at(i);
 			this->GPU.at(i).YResolution = YRes.at(i);
 			this->GPU.at(i).RefreshRate = RefreshRate.at(i);
@@ -432,6 +617,7 @@ private:
 
 
 	void QuerySystem() {
+
 		std::vector <const wchar_t*> SystemName{};
 		std::vector <const wchar_t*> OSVersion{};
 		std::vector <const wchar_t*> OSName{};
@@ -462,6 +648,7 @@ private:
 
 
 	void QueryNetwork() {
+
 		std::vector <const wchar_t*> Name{};
 		std::vector <const wchar_t*> MAC{};
 
@@ -478,6 +665,7 @@ private:
 
 
 	void QueryPhysicalMemory() {
+
 		std::vector<const wchar_t*> PartNumber{};
 
 		QueryWMI(L"Win32_PhysicalMemory", L"PartNumber", PartNumber);
@@ -499,100 +687,5 @@ private:
 		QueryNetwork();
 		QueryPhysicalMemory();
 		QueryRegistry();
-	}
-
-
-public:
-
-
-	struct DiskObject {
-
-		std::wstring SerialNumber{};
-		std::wstring Model{};		 // e.g. ADATA SU740
-		std::wstring Interface{};	 // e.g. SCSI
-		std::wstring DriveLetter{};
-		long long Size{};		 // In GB
-		long long FreeSpace{};		 // In GB
-		unsigned int MediaType{};	 // 4 = SSD, 3 = HDD, 0 = Unspecified, 5 = SCM
-		bool IsBootDrive{};
-
-	}; std::vector <DiskObject> Disk{};
-
-
-	struct {
-
-		std::wstring Manufacturer{};
-		std::wstring Product{};
-		std::wstring Version{};
-		std::wstring SerialNumber{};
-
-	} SMBIOS;
-
-
-	struct {
-
-		std::wstring ProcessorId{};
-		std::wstring Manufacturer{};
-		std::wstring Name{};
-		int Cores{};
-		int Threads{};
-
-	} CPU;
-
-
-	struct GPUObject {
-
-		std::wstring Name{};
-		std::wstring DriverVersion{};
-		unsigned long long Memory{};
-		int XResolution{};
-		int YResolution{};
-		int RefreshRate{};
-
-	}; std::vector <GPUObject> GPU{};
-
-
-	struct NetworkAdapterObject {
-
-		std::wstring Name{};
-		std::wstring MAC{};
-
-	}; std::vector <NetworkAdapterObject> NetworkAdapter{};
-
-
-
-	struct {
-
-		std::wstring Name{};
-		bool IsHypervisorPresent{};
-		std::wstring OSVersion{};
-		std::wstring OSName{};
-		std::wstring OSArchitecture{};
-		std::wstring OSSerialNumber{};
-
-	} System;
-
-
-	struct {
-
-		std::wstring PartNumber{};
-
-	} PhysicalMemory;
-
-
-	struct {
-
-		std::wstring ComputerHardwareId{};
-
-	} Registry;
-
-
-	std::unique_ptr<HardwareId> Pointer() {
-		return std::make_unique<HardwareId>(*this);
-	}
-
-
-	HardwareId() {
-		GetHardwareId();
 	}
 };

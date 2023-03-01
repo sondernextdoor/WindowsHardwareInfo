@@ -6,7 +6,6 @@
 
 namespace CommandLine {
 
-
 	HardwareId HWID{};
 	std::wstring CurCmd{ L"" };
 	std::wstring CmdName{ L"HWInfo>" };
@@ -25,6 +24,18 @@ namespace CommandLine {
 		eAll,
 		eHelp,
 		eExit
+	};
+
+
+	std::unordered_map<unsigned int, std::wstring> BusType {
+		{ 0, L"Unspecified" },
+		{ 1, L"SCSI" },
+		{ 3, L"ATA" },
+		{ 7, L"USB" },
+		{ 8, L"RAID" },
+		{ 11, L"SATA" },
+		{ 17, L"NVMe" },
+		{ 123, L"USB (Likely Flash Drive)" }
 	};
 
 
@@ -53,8 +64,11 @@ namespace CommandLine {
 		L"size",
 		L"freespace",
 		L"mediatype",
-		L"isbootdrive"
+		L"isbootdrive",
+		L"bustype",
+		L"volumes"
 	};
+
 
 	std::vector <std::wstring> SMBIOSSubCommands{
 		L"invalid command",
@@ -63,6 +77,7 @@ namespace CommandLine {
 		L"product",
 		L"version"
 	};
+
 
 	std::vector <std::wstring> GPUSubCommands{
 		L"invalid command",
@@ -73,6 +88,7 @@ namespace CommandLine {
 		L"memory"
 	};
 
+
 	std::vector <std::wstring> CPUSubCommands{
 		L"invalid command",
 		L"processorid",
@@ -82,11 +98,13 @@ namespace CommandLine {
 		L"threads"
 	};
 
+
 	std::vector <std::wstring> NetworkSubCommands{
 		L"invalid command",
 		L"name",
 		L"mac"
 	};
+
 
 	std::vector <std::wstring> SystemSubCommands{
 		L"invalid command",
@@ -98,10 +116,12 @@ namespace CommandLine {
 		L"osserialnumber"
 	};
 
+
 	std::vector <std::wstring> PhysicalMemorySubCommands{
 		L"invalid command",
 		L"partnumber"
 	};
+
 
 	std::vector <std::wstring> RegistrySubCommands{
 		L"invalid command",
@@ -115,6 +135,12 @@ namespace CommandLine {
 		std::vector <int> SubCommandIndex{};
 
 	} ParsedCommand;
+
+
+	void ChangeTextColor(int Color = 2) {
+		HANDLE hConsole{ GetStdHandle(STD_OUTPUT_HANDLE) };
+		SetConsoleTextAttribute(hConsole, Color);
+	}
 
 
 	template <typename T>
@@ -144,21 +170,49 @@ namespace CommandLine {
 
 	void PrintDisks() {
 		for (int i = 0; i < HWID.Disk.size(); i++) {
+			HardwareId::DiskObject& Disk{ HWID.Disk.at(i) };
 
-			std::wcout << L"Model:\t\t\t" << HWID.Disk.at(i).Model << std::endl;
-			std::wcout << L"Serial Number:\t\t" << HWID.Disk.at(i).SerialNumber << std::endl;
-			std::wcout << L"Interface Type:\t\t" << HWID.Disk.at(i).Interface << std::endl;
-			std::wcout << L"Drive Letter:\t\t" << HWID.Disk.at(i).DriveLetter << std::endl;
-			std::wcout << L"Size:\t\t\t" << HWID.Disk.at(i).Size << L" GB" << std::endl;
-			std::wcout << L"Free Space:\t\t" << HWID.Disk.at(i).FreeSpace << L" GB" << std::endl;
+			std::wcout << L"Drive: ";
+			ChangeTextColor(12);
+			std::wcout << Disk.Name.substr(4, Disk.Name.size() - 4);
+			ChangeTextColor(15);
+			std::wcout << L"\n---------------------\n";
+
+			std::wcout << L"Model:\t\t\t" << Disk.Model << std::endl;
+			std::wcout << L"Serial Number:\t\t" << Disk.SerialNumber << std::endl;
+			std::wcout << L"Interface Type:\t\t" << Disk.Interface << std::endl;
+			std::wcout << L"Bus Type:\t\t" << BusType[HWID.Disk.at(i).BusType] << std::endl;
+			std::wcout << L"Size:\t\t\t" << Disk.Size << L" GB" << std::endl;
+			std::wcout << L"Free Space:\t\t" << Disk.FreeSpace << L" GB" << std::endl;
 
 			std::wcout << L"Media Type:\t\t" <<
 				(HWID.Disk.at(i).MediaType == 4 ? L"SSD" :
-					(HWID.Disk.at(i).MediaType == 3 ? L"HDD" : L"")) << std::endl;
+					(HWID.Disk.at(i).MediaType == 3 ? L"HDD" : L"(null)")) << std::endl;
 
-			std::wcout << L"Boot Drive:\t\t" << (HWID.Disk.at(i).IsBootDrive ? L"Yes" : L"No") << std::endl;
+			std::wcout << L"Boot Drive:\t\t" << (Disk.IsBootDrive ? L"Yes" : L"No") << std::endl;
 
-			if (i + 1 < HWID.Disk.size()) { std::wcout << std::endl; }
+			if (Disk.Volumes.empty() == false) {
+				for (int j = 0; j < Disk.Volumes.size(); j++) {
+					std::wcout << std::endl;
+					std::wcout << L"Volume " << j << std::endl << L"--------\n";
+					std::wcout << L"Name:\t\t\t" << Disk.Volumes.at(j).Name << std::endl;
+					std::wcout << L"Serial Number:\t\t" << std::hex << Disk.Volumes.at(j).SerialNumber << std::dec << std::endl;
+					std::wcout << L"Size:\t\t\t" << Disk.Volumes.at(j).Size << L" GB" << std::endl;
+					std::wcout << L"Free Space:\t\t" << Disk.Volumes.at(j).FreeSpace << L" GB" << std::endl;
+					std::wcout << L"Drive Letter:\t\t" << Disk.Volumes.at(j).DriveLetter << std::endl;
+
+					if (j + 1 == Disk.Volumes.size()) {
+						std::wcout << std::endl;
+					}
+				}
+			}
+			else {
+				std::wcout << L"Drive Letter:\t\t" << HWID.Disk.at(i).DriveLetter << std::endl;
+				
+				if (i + 1 != HWID.Disk.size()) {
+					std::wcout << std::endl;
+				}
+			}
 		}
 	}
 
@@ -175,7 +229,7 @@ namespace CommandLine {
 		for (int i = 0; i < HWID.GPU.size(); i++) {
 			std::wcout << L"Name:\t\t\t" << HWID.GPU.at(i).Name << std::endl;
 			std::wcout << L"Driver Version:\t\t" << HWID.GPU.at(i).DriverVersion << std::endl;
-			std::wcout << L"Memory:\t\t\t" << HWID.GPU.at(i).Memory << L" GB" << std::endl;
+			std::wcout << L"Memory:\t\t\t" << HWID.GPU.at(i).Memory << L" MB" << std::endl;
 			std::wcout << L"Resolution:\t\t" << HWID.GPU.at(i).XResolution << L"x" << HWID.GPU.at(i).YResolution << std::endl;
 			std::wcout << L"Refresh Rate:\t\t" << HWID.GPU.at(i).RefreshRate << std::endl;
 
@@ -462,6 +516,43 @@ namespace CommandLine {
 									FmtPrint(HWID.Disk.at(j).IsBootDrive, eDisk, j);
 								}
 							} break;
+
+							case 9: {
+								for (int j = 0; j < HWID.Disk.size(); j++) {
+									FmtPrint(BusType[HWID.Disk.at(j).BusType], eDisk, j);
+								}
+							} break;
+
+							case 10: {
+								for (int i = 0; i < HWID.Disk.size(); i++) {
+									HardwareId::DiskObject& Disk{ HWID.Disk.at(i) };
+
+									if (Disk.Volumes.empty() == false) {
+										std::wcout << L"Drive: ";
+										ChangeTextColor(12);
+										std::wcout << Disk.Name.substr(4, Disk.Name.size() - 4);
+										ChangeTextColor(15);
+										std::wcout << L"\n---------------------";
+
+										for (int j = 0; j < Disk.Volumes.size(); j++) {
+											std::wcout << std::endl;
+											std::wcout << L"Volume " << j << std::endl;
+											std::wcout << L"Name:\t\t\t" << Disk.Volumes.at(j).Name << std::endl;
+											std::wcout << L"Serial Number:\t\t" << std::hex << Disk.Volumes.at(j).SerialNumber << std::dec << std::endl;
+											std::wcout << L"Size:\t\t\t" << Disk.Volumes.at(j).Size << L" GB" << std::endl;
+											std::wcout << L"Free Space:\t\t" << Disk.Volumes.at(j).FreeSpace << L" GB" << std::endl;
+											std::wcout << L"Drive Letter:\t\t" << Disk.Volumes.at(j).DriveLetter << std::endl;
+										}
+									}
+									else {
+										continue;
+									}
+
+									if (i + 1 < HWID.Disk.size()) { 
+										std::wcout << std::endl; 
+									}
+								}
+							} break;
 						}
 					}
 				} break;
@@ -688,55 +779,67 @@ namespace CommandLine {
 			} break;
 
 			case eAll: {
+
+				ChangeTextColor();
 				std::wcout << L"\n-------------\n";
 				std::wcout << L"[+] Disks [+] \n";
 				std::wcout << L"-------------\n\n";
+				ChangeTextColor(15);
 				PrintDisks();
 
+				ChangeTextColor();
 				std::wcout << L"\n--------------\n";
 				std::wcout << L"[+] SMBIOS [+]\n";
 				std::wcout << L"--------------\n\n";
+				ChangeTextColor(15);
 				PrintSMBIOS();
 
+				ChangeTextColor();
 				std::wcout << L"\n------------\n";
 				std::wcout << L"[+] GPUs [+]\n";
 				std::wcout << L"------------\n\n";
+				ChangeTextColor(15);
 				PrintGPUs();
 
-
+				ChangeTextColor();
 				std::wcout << L"\n-----------\n";
 				std::wcout << L"[+] CPU [+]\n";
 				std::wcout << L"-----------\n\n";
+				ChangeTextColor(15);
 				PrintCPU();
 
-
+				ChangeTextColor();
 				std::wcout << L"\n---------------\n";
 				std::wcout << L"[+] Network [+] \n";
 				std::wcout << L"---------------\n\n";
+				ChangeTextColor(15);
 				PrintNetwork();
 
-
+				ChangeTextColor();;
 				std::wcout << L"\n--------------\n";
 				std::wcout << L"[+] System [+]\n";
 				std::wcout << L"--------------\n\n";
+				ChangeTextColor(15);
 				PrintSystem();
 
-
+				ChangeTextColor();
 				std::wcout << L"\n-----------------------\n";
 				std::wcout << L"[+] Physical Memory [+]\n";
 				std::wcout << L"-----------------------\n\n";
+				ChangeTextColor(15);
 				PrintPhysicalMemory();
 
-
+				ChangeTextColor();
 				std::wcout << L"\n----------------\n";
 				std::wcout << L"[+] Registry [+]\n";
 				std::wcout << L"----------------\n\n";
+				ChangeTextColor(15);
 				PrintRegistry();
 
 			} break;
 
 			case eHelp: {
-				ShellExecuteW(nullptr, nullptr, L"http://www.github.com/paradoxwastaken", nullptr, nullptr, SW_SHOW);
+				ShellExecuteW(nullptr, nullptr, L"https://github.com/paradoxwastaken/WindowsHardwareInfo#readme", nullptr, nullptr, SW_SHOW);
 			} break;
 
 			case eExit: {
