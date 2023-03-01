@@ -29,7 +29,7 @@ Volumes:
   * Serial Number
   * Size
   * Free Space
-  * Drive Letter
+  * Volume Letter
 
 
 System Management BIOS (SMBIOS)
