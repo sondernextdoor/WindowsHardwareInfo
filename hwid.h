@@ -370,12 +370,10 @@ private:
 					continue;
 				}
 
-				// Win32_LogicalDisk is relied on to get the drive letter (DeviceId)
-				// However, the data it returns will not be in the same order as the results we get from Win32_DiskDrive
+				// Win32_LogicalDisk is relied on to get the drive letter (DeviceId), however, the data it returns will not be in the same order - 
+				// as the results we get from Win32_DiskDrive
 				// The drive letter is what we rely on to get the total size and free space of the drive, so we must map the data accordingly
-				// Win32_DiskDrive will return data in the order we want. It'll always be PhysicalDrive0, then PhysicalDrive1, then 2, etc.
-
-				// Armed with that knowledge, we can open handles directly to the drive letters we have, and use DeviceIoControl to call into the volume
+				// To map the data, we can start by opening handles directly to the drive letters and calling into the volume via DeviceIoControl
 
 				hVolume = CreateFileW((VolumePath + DeviceId.at(j)).c_str(),
 						      NULL,
@@ -412,8 +410,8 @@ private:
 
 				CloseHandle(hVolume);
 
-				// To map the drive letter from Win32_LogicalDisk to the data returned by Win32_DiskDrive
-				// We compare the drive letter's DiskNumber to the number at the end of the "Name" we recieve from Win32_DiskDrive
+				// To map the drive letter from Win32_LogicalDisk to the data returned by Win32_DiskDrive -
+				// we compare the drive letter's DiskNumber to the number at the end of the "Name" we recieve from Win32_DiskDrive
 				// We then reorder the drive letters accordingly
 
 				if (DiskExtents.Extents->DiskNumber == std::stoi(&SafeString(Name.at(i)).back())) {
@@ -455,7 +453,7 @@ private:
 			this->Disk.at(i).BusType = SortedBusType.at(i);
 			this->Disk.at(i).Name = SafeString(Name.at(i));
 
-			// Data from MSFT_PhysicalDisk will not be in the same order as Win32_DiskDrive
+			// Data from MSFT_PhysicalDisk will again not be in the same order as Win32_DiskDrive
 			// So we compare the "FriendlyName" from MSFT_PhysicalDisk with the "Model" from Win32_DiskDrive
 			// We then reorder the data accordingly
 
@@ -523,7 +521,16 @@ private:
 						nullptr,
 						nullptr,
 						0);
-
+					
+					// If the volume name is null, we want to be able to display "(null)" instead of just blank space - 
+					// however, because we don't know the size of the name in advance, we have to preallocate a buffer of MAX_PATH + 1
+					// This is a problem because the string will never be null, even if the volume name is
+					// To remedy this, we filled the buffer with "\0" and will now loop through it, popping every trailing "\0"
+					// If the buffer is empty afterwardds, we know to display "(null)"
+					// This will be a problem if the actual name of the volume ends with "\0" for whatever reason
+					// In such a case, we'll end up popping the name, or at least any trailing "\0"s -
+					// however, that's a trade-off that I think is acceptable
+					
 					for (int i = MAX_PATH + 1; i >= 0 && VolumeName.empty() == false; i--) {
 						if (VolumeName.back() == L'\0') {
 							VolumeName.pop_back();
