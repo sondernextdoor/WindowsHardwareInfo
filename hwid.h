@@ -526,7 +526,7 @@ private:
 					// however, because we don't know the size of the name in advance, we have to preallocate a buffer of MAX_PATH + 1
 					// This is a problem because the string will never be null, even if the volume name is
 					// To remedy this, we filled the buffer with "\0" and will now loop through it, popping every trailing "\0"
-					// If the buffer is empty afterwardds, we know to display "(null)"
+					// If the buffer is empty afterwards, we know to display "(null)"
 					// This will be a problem if the actual name of the volume ends with "\0" for whatever reason
 					// In such a case, we'll end up popping the name, or at least any trailing "\0"s -
 					// however, that's a trade-off that I think is acceptable
