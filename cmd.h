@@ -839,7 +839,7 @@ namespace CommandLine {
 			} break;
 
 			case eHelp: {
-				ShellExecuteW(nullptr, nullptr, L"https://github.com/paradoxwastaken/WindowsHardwareInfo#readme", nullptr, nullptr, SW_SHOW);
+				ShellExecuteW(nullptr, nullptr, L"https://github.com/sondernextdoor/WindowsHardwareInfo#readme", nullptr, nullptr, SW_SHOW);
 			} break;
 
 			case eExit: {
