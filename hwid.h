@@ -262,6 +262,7 @@ private:
 			return;
 		}
 
+		
 		while (Enumerator) {
 
 			HRESULT Res = Enumerator->Next(WBEM_INFINITE,
