@@ -634,7 +634,7 @@ private:
 		std::vector <bool> IsHypervisorPresent{};
 
 		QueryWMI(L"Win32_ComputerSystem", L"Name", SystemName);
-		QueryWMI(L"Win32_ComputerSystem", L"Model", IsHypervisorPresent);
+		QueryWMI(L"Win32_ComputerSystem", L"HypervisorPresent", IsHypervisorPresent);
 		QueryWMI(L"Win32_OperatingSystem", L"Version", OSVersion);
 		QueryWMI(L"Win32_OperatingSystem", L"Name", OSName);
 		QueryWMI(L"Win32_OperatingSystem", L"OSArchitecture", OSArchitecture);
